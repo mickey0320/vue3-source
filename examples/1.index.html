@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>vue3</title>
-    <script src="../node_modules/@vue/reactivity/dist/reactivity.global.js"></script>
-  </head>
-  <body>
-    <script>
-      const { reactive, shallowReactive, readonly, shallowReadonly, effect } = VueReactivity;
-      const obj = reactive({
-        name: "yanjian",
-        age: 28,
-      });
-    </script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vue3</title>
+  <script src="../node_modules/@vue/reactivity/dist/reactivity.global.js"></script>
+</head>
+
+<body>
+  <script>
+    const { reactive, shallowReactive, readonly, shallowReadonly, effect } = VueReactivity;
+    const xx = {
+      name: "yanjian",
+      age: 28,
+    }
+    const obj1 = reactive(xx);
+    const obj2 = readonly(xx)
+    console.log(obj1 === obj2)
+  </script>
+</body>
+
 </html>

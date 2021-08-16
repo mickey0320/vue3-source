@@ -23,16 +23,18 @@ export function shallowReadonly(target) {
 }
 
 const reactvieMap = new WeakMap();
+const readonlyMap = new WeakMap();
 function createReactiveObject(target, readonly, baseHandler) {
   if (!isObject(target)) {
     return target;
   }
-  const exist = reactvieMap.get(target);
+  const weakMap = readonly ? readonlyMap : reactvieMap
+  const exist = weakMap.get(target);
   if (exist) {
     return exist;
   }
   const proxy = new Proxy(target, baseHandler);
-  reactvieMap.set(target, proxy);
+  weakMap.set(target, proxy);
 
   return proxy;
 }
