@@ -1,3 +1,1 @@
-export default {
-    xx:'xx'
-}
+export * from './reactive'
