@@ -1,14 +1,89 @@
 function isObject(obj) {
     return typeof obj === "object" && obj !== null;
 }
+var extend = Object.assign;
+var isArray = Array.isArray;
+function isIntergerKey(val) {
+    return parseInt(val) + '' === val;
+}
+function hasOwn(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+}
+function hasChanged(val1, val2) {
+    return val1 !== val2;
+}
+
+function effect(fn, options) {
+    if (options === void 0) { options = {}; }
+    var effect = createReactiveEffect(fn, options);
+    if (!options.lazy) {
+        effect();
+    }
+    return effect;
+}
+var activeEffect;
+var effectStack = [];
+var id = 0;
+function createReactiveEffect(fn, options) {
+    var effect = function () {
+        activeEffect = effect;
+        effectStack.push(effect);
+        try {
+            return fn();
+        }
+        finally {
+            effectStack.pop();
+            activeEffect = effectStack[effectStack.length - 1];
+        }
+    };
+    effect.id = id++;
+    effect.__isEffect = true;
+    effect.options = options;
+    effect.deps = [];
+    return effect;
+}
+var targetMap = new WeakMap();
+function track(target, type, key) {
+    if (!activeEffect) {
+        return;
+    }
+    var depsMap = targetMap.get(target);
+    if (!depsMap) {
+        depsMap = new Map();
+        targetMap.set(target, depsMap);
+    }
+    var dep = depsMap.get(key);
+    if (!dep) {
+        dep = new Set();
+        depsMap.set(key, dep);
+    }
+    if (!dep.has(activeEffect)) {
+        dep.add(activeEffect);
+    }
+}
+function trigger(target, type, key, newValue, oldValue) {
+    var depsMap = targetMap.get(target);
+    if (!depsMap)
+        return;
+    var effectSet = new Set();
+    function add(effects) {
+        effects.forEach(function (effect) { return effectSet.add(effect); });
+    }
+    add(depsMap.get(key));
+    effectSet.forEach(function (effect) { return effect(); });
+}
 
 function createGetter(shallow, isReadonly) {
     if (shallow === void 0) { shallow = false; }
     if (isReadonly === void 0) { isReadonly = false; }
     return function get(target, key, receiver) {
         var res = Reflect.get(target, key, receiver);
+        console.log("get:" + key);
         if (shallow) {
             return res;
+        }
+        if (!isReadonly) {
+            track(target, "get", key);
         }
         if (isObject(res)) {
             return isReadonly ? readonly(res) : reactive(res);
@@ -16,28 +91,47 @@ function createGetter(shallow, isReadonly) {
         return res;
     };
 }
-var get = createGetter();
-var shallowGet = createGetter(true, false);
-createGetter(false, true);
-createGetter(true, true);
 function createSetter(shallow) {
     return function setter(target, key, value, receiver) {
+        var hadKey = isArray(target) && isIntergerKey(key)
+            ? parseInt(key) < target.length
+            : hasOwn(target, key);
+        if (!hadKey) {
+            console.log("新增");
+        }
+        else if (hasChanged(target[key], value)) {
+            console.log("修改");
+        }
         var res = Reflect.set(target, key, value, receiver);
+        trigger(target, "set", key, value, target[key]);
         return res;
     };
 }
+var get = createGetter();
+var shallowGet = createGetter(true, false);
+var readonlyGet = createGetter(false, true);
+var shallowReadonlyGet = createGetter(true, true);
 var set = createSetter();
 var shallowSet = createSetter();
+var readonlySet = {
+    set: function (target, key) {
+        console.log("set failed on " + key + " about " + JSON.stringify(target));
+    },
+};
 var mutableHandler = {
     get: get,
     set: set,
 };
 var shallowHanlder = {
-    shallowGet: shallowGet,
-    shallowSet: shallowSet
+    get: shallowGet,
+    set: shallowSet,
 };
-var readonlyHandler = {};
-var shallowReadonlyHandler = {};
+var readonlyHandler = extend({
+    get: readonlyGet,
+}, readonlySet);
+var shallowReadonlyHandler = extend({
+    get: shallowReadonlyGet,
+}, readonlySet);
 
 function reactive(target) {
     return createReactiveObject(target, false, mutableHandler);
@@ -67,4 +161,4 @@ function createReactiveObject(target, readonly, baseHandler) {
     return proxy;
 }
 
-export { reactive, readonly, shallowReactive, shallowReadonly };
+export { effect, reactive, readonly, shallowReactive, shallowReadonly };

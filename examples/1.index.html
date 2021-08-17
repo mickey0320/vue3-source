@@ -15,10 +15,15 @@
     const xx = {
       name: "yanjian",
       age: 28,
+      list: [] 
     }
-    const obj1 = reactive(xx);
-    const obj2 = readonly(xx)
-    console.log(obj1 === obj2)
+    const proxy = reactive(xx) 
+    effect(() => {
+      console.log(proxy.name)
+    })
+    setTimeout(()=> {
+      proxy.name = 'mickey'
+    }, 1000)
   </script>
 </body>
 
