@@ -11,7 +11,7 @@ function createReactiveEffect(fn, options) {
       try {
         activeEffect = effect;
         effectStack.push(effect);
-        fn();
+        return fn();
       } finally {
         effectStack.pop();
         activeEffect = effectStack[effectStack.length - 1];
