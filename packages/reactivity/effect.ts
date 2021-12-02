@@ -1,3 +1,6 @@
+import { isArray, isIntergerKey } from "packages/shared";
+import { TriggerOpType } from "./operators";
+
 let id = 0;
 let activeEffect = null;
 const effectStack = [];
@@ -47,4 +50,33 @@ export function track(target, type, key) {
   if (!dep.has(activeEffect)) {
     dep.add(activeEffect);
   }
+}
+
+export function trigger(target, type, key, value, oldValue?) {
+  const depsMap = targetMap.get(target);
+  if (!depsMap) return;
+  const effects = new Set();
+  const add = (effectsToAdd) => {
+    if (effectsToAdd) {
+      effectsToAdd.forEach((effect) => effects.add(effect));
+    }
+  };
+  if (key === "length" && isArray(target)) {
+    depsMap.forEach((dep, key) => {
+      if (key === "length" || value < key) {
+        add(dep);
+      }
+    });
+  } else {
+    const deps = depsMap.get(key);
+    add(deps);
+    switch (type) {
+      case TriggerOpType.ADD:
+        if (isArray(target) && isIntergerKey(key)) {
+          add(depsMap.get("length"));
+        }
+    }
+  }
+
+  effects.forEach((effect: any) => effect());
 }
