@@ -10,3 +10,5 @@ export const hasOwn = (target, key) =>
   Object.prototype.hasOwnProperty.call(target, key);
 
 export const isArray = Array.isArray;
+
+export const hasChanged = (newVal, oldVal) => newVal !== oldVal;
